@@ -104,6 +104,28 @@ npm run dev
 - "将其转换为水彩画风格"
 - "添加霓虹灯和飞行汽车"
 
+### 高级示例：生成手办模型
+
+**用于生成 3D 手办可视化的提示词：**
+
+```
+创建一个插画角色的 1/7 比例商业化手办，采用真实风格和环境。将手办放置在电脑桌上，使用圆形透明亚克力底座，不带任何文字。在电脑屏幕上显示该手办的 ZBrush 建模过程。在电脑屏幕旁边，放置一个印有原始插画的万代风格玩具包装盒。
+```
+
+这个高级提示词演示了如何创建带有场景元素的详细产品可视化效果。
+
+## 项目截图
+
+### 主界面
+![Nano Banana AI 图像编辑器](https://raw.githubusercontent.com/JW-chenjingwei/nano-banana-ai-editor/main/public/screenshot-main.png)
+
+*交互式编辑器界面，包含图片上传、提示词输入和实时生成功能*
+
+### 生成结果示例
+![生成的手办示例](https://raw.githubusercontent.com/JW-chenjingwei/nano-banana-ai-editor/main/public/screenshot-result.png)
+
+*使用高级提示词生成的手办可视化效果示例*
+
 ## 生产环境构建
 
 ```bash

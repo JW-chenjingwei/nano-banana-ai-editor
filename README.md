@@ -104,6 +104,28 @@ Visit [http://localhost:3000](http://localhost:3000) to see the application.
 - "Transform this into a watercolor painting"
 - "Add neon lights and flying cars"
 
+### Advanced Example: Creating Collectible Figures
+
+**Prompt for generating 3D figurine visualization:**
+
+```
+Create a 1/7 scale commercialized figure of the character in the illustration, in a realistic style and environment. Place the figure on a computer desk, using a circular transparent acrylic base without any text. On the computer screen, display the ZBrush modeling process of the figure. Next to the computer screen, place a BANDAI-style toy packaging box printed with the original artwork.
+```
+
+This advanced prompt demonstrates how to create detailed product visualizations with contextual elements.
+
+## Screenshots
+
+### Main Interface
+![Nano Banana AI Image Editor](https://raw.githubusercontent.com/JW-chenjingwei/nano-banana-ai-editor/main/public/screenshot-main.png)
+
+*The interactive editor interface with image upload, prompt input, and real-time generation*
+
+### Generated Result Example
+![Generated Figure Example](https://raw.githubusercontent.com/JW-chenjingwei/nano-banana-ai-editor/main/public/screenshot-result.png)
+
+*Example of AI-generated collectible figure visualization using the advanced prompt*
+
 ## Building for Production
 
 ```bash
