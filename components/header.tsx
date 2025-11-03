@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Menu, X } from "lucide-react"
+import AuthButton from "./auth-button"
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
@@ -38,12 +39,7 @@ export default function Header() {
 
           {/* Right Actions */}
           <div className="hidden md:flex items-center gap-4">
-            <button className="px-4 py-2 rounded-full font-semibold text-gray-700 hover:bg-gray-100 transition">
-              Sign In
-            </button>
-            <button className="px-6 py-2 rounded-full font-semibold text-white bg-yellow-500 hover:bg-yellow-600 transition">
-              Launch Now
-            </button>
+            <AuthButton />
           </div>
 
           {/* Mobile Menu Button */}
