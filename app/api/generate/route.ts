@@ -12,6 +12,15 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if API key is configured
+    if (!process.env.OPENROUTER_API_KEY) {
+      console.error('OPENROUTER_API_KEY is not configured')
+      return NextResponse.json(
+        { error: 'API key not configured. Please set OPENROUTER_API_KEY in environment variables.' },
+        { status: 500 }
+      )
+    }
+
     const { imageUrl, prompt } = await request.json()
 
     if (!imageUrl || !prompt) {
@@ -20,6 +29,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    console.log('Making request to OpenRouter API...')
 
     const completion = await openai.chat.completions.create({
       model: "google/gemini-2.5-flash-image",
@@ -45,6 +56,8 @@ export async function POST(request: NextRequest) {
       modalities: ["image", "text"],
     })
 
+    console.log('Received response from OpenRouter')
+
     const message = completion.choices[0]?.message
     const responseText = message?.content
 
@@ -59,8 +72,17 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('API Error:', error)
+
+    // Enhanced error logging
+    if (error.response) {
+      console.error('Error response:', error.response.status, error.response.data)
+    }
+
     return NextResponse.json(
-      { error: error.message || 'Failed to process image' },
+      {
+        error: error.message || 'Failed to process image',
+        details: error.response?.data || error.toString()
+      },
       { status: 500 }
     )
   }
