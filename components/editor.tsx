@@ -17,6 +17,13 @@ export default function Editor() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Check file size (limit to 3MB to stay within Vercel's 4.5MB limit after base64 encoding)
+      const maxSize = 3 * 1024 * 1024 // 3MB in bytes
+      if (file.size > maxSize) {
+        alert('Image file is too large. Please select an image smaller than 3MB.')
+        return
+      }
+
       setSelectedFile(file)
       const reader = new FileReader()
       reader.onload = (event) => {
@@ -161,7 +168,7 @@ export default function Editor() {
               >
                 <p className="text-4xl mb-2">+</p>
                 <p className="text-gray-700 font-semibold">Upload Image</p>
-                <p className="text-gray-500 text-sm">Max 50MB</p>
+                <p className="text-gray-500 text-sm">Max 3MB</p>
               </button>
             </div>
 
