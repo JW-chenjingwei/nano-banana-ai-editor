@@ -1,0 +1,179 @@
+# Nano Banana AI 图像编辑器 🍌✨
+
+[English](README.md) | 简体中文
+
+基于 Next.js 16 和 Google Gemini 2.5 Flash Image API 构建的 AI 驱动图像编辑 Web 应用。
+
+## 功能特性
+
+- 🎨 **AI 图像生成与编辑** - 使用自然语言提示词转换图像
+- ⚡ **快速处理** - 由 Google 的 Gemini 2.5 Flash Image 模型驱动
+- 🖼️ **交互式界面** - 上传图像并即时查看结果
+- 📥 **下载结果** - 保存生成的图像和描述
+- 🎯 **现代化 UI** - 使用 shadcn/ui 和 Tailwind CSS 构建
+
+## 技术栈
+
+- **框架：** Next.js 16.0.0 with App Router
+- **UI 库：** React 19.2.0
+- **样式：** Tailwind CSS 4.1.9
+- **组件：** shadcn/ui (60+ 组件)
+- **AI API：** OpenRouter with Gemini 2.5 Flash Image
+- **语言：** TypeScript 5
+
+## 快速开始
+
+### 前置要求
+
+- Node.js 18+
+- npm 或 pnpm
+- OpenRouter API 密钥 ([点击获取](https://openrouter.ai/))
+
+### 获取 API 密钥
+
+1. **注册 OpenRouter**：
+   - 访问 [https://openrouter.ai/](https://openrouter.ai/)
+   - 创建免费账户
+
+2. **获取 API 密钥**：
+   - 前往 [https://openrouter.ai/keys](https://openrouter.ai/keys)
+   - 点击 "Create Key"
+   - 复制你的 API 密钥（格式：`sk-or-v1-...`）
+
+3. **充值积分**（如需要）：
+   - OpenRouter 需要积分来使用 API
+   - 访问 [https://openrouter.ai/credits](https://openrouter.ai/credits)
+   - 为账户充值（Gemini 2.5 Flash Image 费用约为 $0.30/百万输入 tokens）
+
+### 安装步骤
+
+1. **克隆仓库**：
+```bash
+git clone https://github.com/JW-chenjingwei/nano-banana-ai-editor.git
+cd nano-banana-ai-editor
+```
+
+2. **安装依赖**：
+```bash
+npm install --legacy-peer-deps
+```
+
+3. **配置环境变量**：
+
+在项目根目录创建 `.env.local` 文件：
+
+```bash
+# Windows 系统
+copy NUL .env.local
+
+# macOS/Linux 系统
+touch .env.local
+```
+
+然后将你的 OpenRouter API 密钥添加到 `.env.local` 文件中：
+
+```env
+OPENROUTER_API_KEY=sk-or-v1-你的实际API密钥
+```
+
+**⚠️ 重要提示**：
+- 将 `sk-or-v1-你的实际API密钥` 替换为你从 OpenRouter 获取的实际 API 密钥
+- 切勿将 `.env.local` 文件提交到 Git（已在 `.gitignore` 中）
+- 请妥善保管你的 API 密钥
+
+4. **运行开发服务器**：
+```bash
+npm run dev
+```
+
+5. **打开浏览器**：
+
+访问 [http://localhost:3000](http://localhost:3000) 查看应用。
+
+## 使用方法
+
+1. **上传图片** - 点击上传区域选择图片
+2. **输入提示词** - 描述你想要如何转换图片
+3. **生成** - 点击 "Generate Now" 并等待 10-20 秒
+4. **下载** - 保存生成的图片
+
+### 提示词示例
+
+- "在背景中添加日落"
+- "将其变成未来赛博朋克场景"
+- "将其转换为水彩画风格"
+- "添加霓虹灯和飞行汽车"
+
+## 生产环境构建
+
+```bash
+npm run build
+npm start
+```
+
+## Docker 部署
+
+```bash
+docker build -t nano-banana-ai-editor .
+docker run -p 3000:3000 -e OPENROUTER_API_KEY=你的密钥 nano-banana-ai-editor
+```
+
+## 项目结构
+
+```
+├── app/
+│   ├── api/generate/    # 图像生成 API 路由
+│   ├── layout.tsx       # 根布局
+│   └── page.tsx         # 首页
+├── components/
+│   ├── editor.tsx       # 主编辑器组件
+│   ├── ui/              # shadcn/ui 组件
+│   └── ...
+├── public/              # 静态资源
+└── lib/                 # 工具函数
+```
+
+## 环境变量
+
+本项目需要设置以下环境变量：
+
+| 变量 | 说明 | 必需 | 示例 |
+|------|------|------|------|
+| `OPENROUTER_API_KEY` | 用于访问 Gemini 2.5 Flash Image 的 OpenRouter API 密钥 | 是 | `sk-or-v1-abc123...` |
+
+### 配置方法
+
+1. 在项目根目录创建 `.env.local` 文件
+2. 添加你的 API 密钥：
+   ```env
+   OPENROUTER_API_KEY=sk-or-v1-你的实际API密钥
+   ```
+3. 如果开发服务器已在运行，需要重启
+
+**安全提示**：
+- ✅ `.env.local` 文件已在 `.gitignore` 中，不会被提交
+- ❌ 切勿公开分享你的 API 密钥
+- ❌ 切勿将 API 密钥提交到版本控制
+- ✅ 在生产环境部署时使用环境变量（Vercel、Docker 等）
+
+## 贡献
+
+欢迎贡献！请随时提交 Pull Request。
+
+## 许可证
+
+本项目是开源的，采用 [MIT License](LICENSE)。
+
+## 致谢
+
+- 由 [Google Gemini 2.5 Flash Image](https://ai.google.dev/gemini-api/docs/image-generation) 驱动
+- UI 组件来自 [shadcn/ui](https://ui.shadcn.com/)
+- 使用 [Next.js](https://nextjs.org/) 构建
+
+## 支持
+
+如有任何问题或遇到问题，请在 GitHub 上提交 issue。
+
+---
+
+使用 ❤️ 和 Claude Code 构建

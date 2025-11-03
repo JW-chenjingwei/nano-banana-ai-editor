@@ -1,5 +1,7 @@
 # Nano Banana AI Image Editor 🍌✨
 
+English | [简体中文](README.zh-CN.md)
+
 An AI-powered image editing web application built with Next.js 16 and Google Gemini 2.5 Flash Image API.
 
 ## Features
