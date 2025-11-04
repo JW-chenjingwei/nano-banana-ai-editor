@@ -20,20 +20,14 @@ export default function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="#" className="text-gray-700 hover:text-yellow-600 font-medium">
+            <Link href="/" className="text-gray-700 hover:text-yellow-600 font-medium">
+              Home
+            </Link>
+            <Link href="/#editor" className="text-gray-700 hover:text-yellow-600 font-medium">
               Image Editor
             </Link>
-            <Link href="#" className="text-gray-700 hover:text-yellow-600 font-medium">
-              Showcase
-            </Link>
-            <Link href="#" className="text-gray-700 hover:text-yellow-600 font-medium">
-              Toolbox
-            </Link>
-            <Link href="#" className="text-gray-700 hover:text-yellow-600 font-medium">
+            <Link href="/pricing" className="text-gray-700 hover:text-yellow-600 font-medium">
               Pricing
-            </Link>
-            <Link href="#" className="text-gray-700 hover:text-yellow-600 font-medium">
-              API
             </Link>
           </nav>
 
@@ -51,20 +45,14 @@ export default function Header() {
         {/* Mobile Navigation */}
         {isOpen && (
           <nav className="md:hidden pb-4 space-y-2">
-            <Link href="#" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
+            <Link href="/" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
+              Home
+            </Link>
+            <Link href="/#editor" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
               Image Editor
             </Link>
-            <Link href="#" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
-              Showcase
-            </Link>
-            <Link href="#" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
-              Toolbox
-            </Link>
-            <Link href="#" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
+            <Link href="/pricing" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
               Pricing
-            </Link>
-            <Link href="#" className="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded">
-              API
             </Link>
           </nav>
         )}

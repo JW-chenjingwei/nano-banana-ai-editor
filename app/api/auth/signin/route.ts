@@ -5,11 +5,16 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const origin = request.headers.get('origin')
 
+  // Get provider from request body (default to 'github' for backward compatibility)
+  const body = await request.json()
+  const provider = body.provider || 'github'
+
   console.log('🔐 Sign in request from:', origin)
+  console.log('🔑 Provider:', provider)
   console.log('🔄 Redirect will be to:', `${origin}/auth/callback`)
 
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'github',
+    provider: provider as 'github' | 'google',
     options: {
       redirectTo: `${origin}/auth/callback`,
     },
