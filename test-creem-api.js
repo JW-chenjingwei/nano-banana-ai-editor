@@ -1,99 +1,72 @@
-// Test Creem API directly
-const apiKey = 'creem_test_6KdlTldMzkVvkPglJ4brob';
-const productId = 'prod_73f2TIH0PZehGLpKVzhShE';
+// Test Creem API with official sample code - PRODUCTION CREDENTIALS
+import axios from 'axios';
+
+// Using production credentials
+const apiKey = 'creem_6ukMYM5SkJaeI2PnOHHChw';
+const productId = 'prod_2QE0CLXZ4FdRHEIUR6fDDt';
 
 async function testCreemAPI() {
-  console.log('🔍 Testing Creem API...\n');
+  console.log('🔍 Testing Creem API with Official Sample Code...\n');
+  console.log(`API Key: ${apiKey}`);
+  console.log(`Product ID: ${productId}\n`);
 
-  // Test 1: List products
-  console.log('📋 Test 1: Listing all products...');
+  // Official sample code test: Seat-based checkout
+  console.log('💳 Test: Creating seat-based checkout (Official Sample)...');
   try {
-    const listResponse = await fetch('https://api.creem.io/v1/products', {
-      method: 'GET',
-      headers: {
-        'x-api-key': apiKey,
+    const seatBasedCheckout = await axios.post(
+      `https://api.creem.io/v1/checkouts`,
+      {
+        product_id: productId,
+        units: 5, // Number of seats to purchase
       },
-    });
+      {
+        headers: { "x-api-key": apiKey },
+      }
+    );
 
-    const products = await listResponse.json();
-    console.log('✅ Products list:', JSON.stringify(products, null, 2));
-    console.log('\n');
+    console.log('✅ Success! Status:', seatBasedCheckout.status);
+    console.log('Response:', JSON.stringify(seatBasedCheckout.data, null, 2));
+
+    if (seatBasedCheckout.data.url) {
+      console.log('\n🎉 Checkout URL:', seatBasedCheckout.data.url);
+    }
   } catch (error) {
-    console.error('❌ Failed to list products:', error);
+    console.error('❌ Failed to create checkout');
+    if (error.response) {
+      console.error('Status:', error.response.status);
+      console.error('Response:', JSON.stringify(error.response.data, null, 2));
+    } else {
+      console.error('Error:', error.message);
+    }
   }
 
-  // Test 2: Get specific product
-  console.log(`📦 Test 2: Getting product ${productId}...`);
+  // Additional test: Without units (basic checkout)
+  console.log('\n💳 Test 2: Creating basic checkout (no units)...');
   try {
-    const productResponse = await fetch(`https://api.creem.io/v1/products/${productId}`, {
-      method: 'GET',
-      headers: {
-        'x-api-key': apiKey,
+    const basicCheckout = await axios.post(
+      `https://api.creem.io/v1/checkouts`,
+      {
+        product_id: productId,
       },
-    });
+      {
+        headers: { "x-api-key": apiKey },
+      }
+    );
 
-    const product = await productResponse.json();
-    console.log('✅ Product details:', JSON.stringify(product, null, 2));
-    console.log('\n');
+    console.log('✅ Success! Status:', basicCheckout.status);
+    console.log('Response:', JSON.stringify(basicCheckout.data, null, 2));
+
+    if (basicCheckout.data.url) {
+      console.log('\n🎉 Checkout URL:', basicCheckout.data.url);
+    }
   } catch (error) {
-    console.error('❌ Failed to get product:', error);
-  }
-
-  // Test 3: Create checkout session (original format)
-  console.log('💳 Test 3: Creating checkout session (customer object)...');
-  try {
-    const checkoutBody = {
-      product_id: productId,
-      customer: {
-        email: 'test@example.com',
-      },
-      success_url: 'http://localhost:3000/payment/success?session_id={CHECKOUT_SESSION_ID}',
-    };
-
-    console.log('Request body:', JSON.stringify(checkoutBody, null, 2));
-
-    const checkoutResponse = await fetch('https://api.creem.io/v1/checkouts', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(checkoutBody),
-    });
-
-    const checkout = await checkoutResponse.json();
-    console.log(`Status: ${checkoutResponse.status}`);
-    console.log('Response:', JSON.stringify(checkout, null, 2));
-    console.log('\n');
-  } catch (error) {
-    console.error('❌ Failed to create checkout:', error);
-  }
-
-  // Test 4: Create checkout session (customer_email format)
-  console.log('💳 Test 4: Creating checkout session (customer_email string)...');
-  try {
-    const checkoutBody = {
-      product_id: productId,
-      customer_email: 'test@example.com',
-      success_url: 'http://localhost:3000/payment/success?session_id={CHECKOUT_SESSION_ID}',
-    };
-
-    console.log('Request body:', JSON.stringify(checkoutBody, null, 2));
-
-    const checkoutResponse = await fetch('https://api.creem.io/v1/checkouts', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(checkoutBody),
-    });
-
-    const checkout = await checkoutResponse.json();
-    console.log(`Status: ${checkoutResponse.status}`);
-    console.log('Response:', JSON.stringify(checkout, null, 2));
-  } catch (error) {
-    console.error('❌ Failed to create checkout:', error);
+    console.error('❌ Failed to create basic checkout');
+    if (error.response) {
+      console.error('Status:', error.response.status);
+      console.error('Response:', JSON.stringify(error.response.data, null, 2));
+    } else {
+      console.error('Error:', error.message);
+    }
   }
 }
 

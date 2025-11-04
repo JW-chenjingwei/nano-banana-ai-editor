@@ -30,13 +30,14 @@ const pricingTiers: PricingTier[] = [
     name: "Basic",
     price: {
       monthly: 12,
-      yearly: 144
+      yearly: 12
     },
     credits: {
       monthly: 150,
-      yearly: 1800
+      yearly: 150
     },
     images: "75 high-quality images/month",
+    popular: true,
     features: [
       "All style templates",
       "Standard generation speed",
@@ -45,69 +46,14 @@ const pricingTiers: PricingTier[] = [
       "Commercial use license"
     ],
     priceId: {
-      monthly: "prod_4qnJojSNjKtm3KwEkL3r0p",
-      yearly: "prod_r6yj7Vfk0cfz9yujZphp"
-    }
-  },
-  {
-    name: "Pro",
-    price: {
-      monthly: 19.50,
-      yearly: 234
-    },
-    credits: {
-      monthly: 800,
-      yearly: 9600
-    },
-    images: "400 high-quality images/month",
-    popular: true,
-    features: [
-      "Seedream-4 and Nanobanana-Pro model",
-      "Priority generation queue",
-      "Priority customer support",
-      "JPG/PNG/WebP downloads",
-      "Batch generation",
-      "Image editing tools (coming soon)",
-      "Commercial use license"
-    ],
-    priceId: {
-      monthly: "prod_65Z9K9I3Q01qH9SDcMw91I",
-      yearly: "prod_3UEd1QgQ7UIzL8JexR7J1o"
-    }
-  },
-  {
-    name: "Max",
-    price: {
-      monthly: 80,
-      yearly: 960
-    },
-    credits: {
-      monthly: 4600,
-      yearly: 55200
-    },
-    images: "2300 high-quality images/month",
-    features: [
-      "Both advanced models",
-      "Fastest generation speed",
-      "Dedicated account manager",
-      "All format downloads",
-      "Batch generation",
-      "Professional editing suite (coming soon)",
-      "Commercial use license"
-    ],
-    priceId: {
-      monthly: "prod_2FkOnfFXDpmHoGx5MKTFba",
-      yearly: "prod_4kpgGD1NYVpeun1SDwK7Sw"
+      monthly: "prod_2QE0CLXZ4FdRHEIUR6fDDt",
+      yearly: "prod_2QE0CLXZ4FdRHEIUR6fDDt"
     }
   }
 ]
 
-const creditPacks = [
-  { name: "Starter", credits: 200, price: 10 },
-  { name: "Growth", credits: 533, price: 25 },
-  { name: "Professional", credits: 1333, price: 60 },
-  { name: "Enterprise", credits: 5333, price: 200 }
-]
+// Credit packs removed for simplified testing
+const creditPacks: { name: string; credits: number; price: number }[] = []
 
 interface PaymentDetails {
   tierName: string
@@ -164,7 +110,7 @@ export default function Pricing() {
     }
     const requestBody = {
       product_id: productId,
-      preview_only: true
+      preview_only: true,  // Get preview first
     }
 
     // Initialize payment details
@@ -173,8 +119,8 @@ export default function Pricing() {
       price,
       cycle: billingCycle,
       productId,
-      requestUrl,
-      headers: requestHeaders,
+      requestUrl: 'https://api.creem.io/v1/checkouts',  // Display URL for user
+      headers: { 'x-api-key': 'Will be sent from backend' },
       body: { product_id: productId }
     }
 
@@ -220,7 +166,8 @@ export default function Pricing() {
     }
     const requestBody = {
       product_id: paymentDetails.productId,
-      preview_only: false
+      preview_only: false,
+      test_mode: false  // Use real Creem test API
     }
 
     try {
@@ -485,11 +432,12 @@ export default function Pricing() {
             Simple, transparent pricing
           </h2>
           <p className="text-xl text-gray-600 mb-8">
-            Choose the plan that works best for you
+            $12/month - Basic Plan
           </p>
 
-          {/* Billing Toggle */}
-          <div className="inline-flex items-center gap-4 bg-gray-100 p-1 rounded-full">
+          {/* Billing Toggle - Hidden for single plan */}
+          <div className="hidden">
+            <div className="inline-flex items-center gap-4 bg-gray-100 p-1 rounded-full">
             <button
               onClick={() => setBillingCycle('monthly')}
               className={`px-6 py-2 rounded-full font-semibold transition ${
@@ -514,10 +462,11 @@ export default function Pricing() {
               </span>
             </button>
           </div>
+          </div>
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-8 mb-20">
+        <div className="max-w-md mx-auto mb-20">
           {pricingTiers.map((tier) => (
             <div
               key={tier.name}

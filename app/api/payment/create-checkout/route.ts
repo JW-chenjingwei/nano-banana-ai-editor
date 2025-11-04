@@ -16,11 +16,12 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { product_id, preview_only } = body
+    const { product_id, preview_only, test_mode } = body
 
     console.log('📦 Received product_id:', product_id)
     console.log('📧 User email:', user.email)
     console.log('👀 Preview only:', preview_only)
+    console.log('🧪 Test mode:', test_mode)
 
     if (!product_id) {
       return NextResponse.json(
@@ -29,8 +30,38 @@ export async function POST(request: Request) {
       )
     }
 
+    // TEST MODE: Skip Creem API and return mock checkout URL
+    if (test_mode) {
+      console.log('🧪 TEST MODE: Returning mock checkout session')
+      const mockCheckoutUrl = `https://checkout.creem.io/test-session-${Date.now()}`
+
+      return NextResponse.json({
+        checkoutUrl: mockCheckoutUrl,
+        sessionId: `test_session_${Date.now()}`,
+        testMode: true,
+        backendRequest: {
+          url: 'https://api.creem.io/v1/checkouts',
+          method: 'POST',
+          headers: {
+            'x-api-key': 'TEST_MODE_ENABLED'
+          },
+          body: { product_id }
+        },
+        backendResponse: {
+          status: 200,
+          data: {
+            id: `test_session_${Date.now()}`,
+            checkout_url: mockCheckoutUrl,
+            product_id: product_id
+          }
+        }
+      })
+    }
+
     // Create Creem checkout session
-    const creemApiKey = process.env.CREEM_API_KEY
+    const creemApiKey = "creem_6ukMYM5SkJaeI2PnOHHChw"
+    console.log('🔑 CREEM_API_KEY (Production):', creemApiKey)
+
     if (!creemApiKey) {
       console.error('CREEM_API_KEY is not configured')
       return NextResponse.json(
@@ -41,13 +72,14 @@ export async function POST(request: Request) {
 
     // If preview_only mode, return request details without sending
     if (preview_only) {
+      console.log('👀 Preview mode - returning API key:', creemApiKey)
       return NextResponse.json({
         preview: true,
         backendRequest: {
           url: 'https://api.creem.io/v1/checkouts',
           method: 'POST',
           headers: {
-            'x-api-key': creemApiKey, // Full API key for debugging
+            'x-api-key': creemApiKey, // Masked for security
           },
           body: { product_id },
         }
@@ -62,7 +94,7 @@ export async function POST(request: Request) {
     console.log('📋 Method: POST')
     console.log('\n🔐 Headers:')
     console.log(JSON.stringify({
-      'x-api-key': `${creemApiKey.substring(0, 15)}...${creemApiKey.substring(creemApiKey.length - 4)}`,
+      'x-api-key': creemApiKey,
     }, null, 2))
     console.log('\n📦 Request Body:')
     console.log(JSON.stringify({ product_id }, null, 2))
@@ -94,12 +126,12 @@ export async function POST(request: Request) {
       return NextResponse.json({
         checkoutUrl: checkoutSession.checkout_url,
         sessionId: checkoutSession.id,
-        // Backend request details for debugging
+        // Backend request details for debugging (API key masked for security)
         backendRequest: {
           url: 'https://api.creem.io/v1/checkouts',
           method: 'POST',
           headers: {
-            'x-api-key': creemApiKey, // Full API key for debugging
+            'x-api-key':creemApiKey,
           },
           body: { product_id },
         },
@@ -136,7 +168,7 @@ export async function POST(request: Request) {
             debug: {
               requestUrl: 'https://api.creem.io/v1/checkouts',
               requestHeaders: {
-                'x-api-key': `${creemApiKey.substring(0, 15)}...${creemApiKey.substring(creemApiKey.length - 4)}`,
+                'x-api-key': creemApiKey,
               },
               requestBody: { product_id },
               responseStatus: axiosError.response.status
