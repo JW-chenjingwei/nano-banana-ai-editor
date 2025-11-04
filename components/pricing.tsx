@@ -45,7 +45,7 @@ const pricingTiers: PricingTier[] = [
       "Commercial use license"
     ],
     priceId: {
-      monthly: "prod_73f2TIH0PZehGLpKVzhShE",
+      monthly: "prod_4qnJojSNjKtm3KwEkL3r0p",
       yearly: "prod_r6yj7Vfk0cfz9yujZphp"
     }
   },
@@ -109,10 +109,26 @@ const creditPacks = [
   { name: "Enterprise", credits: 5333, price: 200 }
 ]
 
+interface PaymentDetails {
+  tierName: string
+  price: number
+  cycle: string
+  productId: string
+  requestUrl: string
+  headers: any
+  body: any
+  response?: any
+  error?: string
+  backendRequest?: any
+}
+
 export default function Pricing() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('yearly')
   const [loading, setLoading] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [showDetailsModal, setShowDetailsModal] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -129,10 +145,7 @@ export default function Pricing() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const handleSubscribe = async (priceId: string, tierName: string) => {
-    // DEBUG: Show the Product ID being sent
-    alert(`🔍 DEBUG INFO:\n\nTier: ${tierName}\nBilling Cycle: ${billingCycle}\nProduct ID: ${priceId}\n\nThis will be sent to the API.`)
-
+  const handleSubscribe = async (productId: string, tierName: string) => {
     // Check if user is authenticated
     if (!isAuthenticated) {
       alert('Please sign in to subscribe. Use the GitHub or Google login buttons in the top right corner.')
@@ -140,44 +153,332 @@ export default function Pricing() {
     }
 
     setLoading(tierName)
+
+    // Find tier details
+    const tier = pricingTiers.find(t => t.name === tierName)
+    const price = tier ? tier.price[billingCycle] : 0
+
+    const requestUrl = '/api/payment/create-checkout'
+    const requestHeaders = {
+      'Content-Type': 'application/json',
+    }
+    const requestBody = {
+      product_id: productId,
+      preview_only: true
+    }
+
+    // Initialize payment details
+    const details: PaymentDetails = {
+      tierName,
+      price,
+      cycle: billingCycle,
+      productId,
+      requestUrl,
+      headers: requestHeaders,
+      body: { product_id: productId }
+    }
+
     try {
-      const response = await fetch('/api/payment/create-checkout', {
+      // Get preview of backend request
+      const previewResponse = await fetch(requestUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          priceId,
-          billingCycle,
-        }),
+        headers: requestHeaders,
+        body: JSON.stringify(requestBody),
       })
 
+      const previewData = await previewResponse.json()
+
+      if (previewData.preview && previewData.backendRequest) {
+        details.backendRequest = previewData.backendRequest
+        setPaymentDetails(details)
+        setShowConfirmModal(true)
+        setLoading(null)
+      } else {
+        details.error = 'Failed to get request preview'
+        setPaymentDetails(details)
+        setShowDetailsModal(true)
+        setLoading(null)
+      }
+    } catch (error) {
+      console.error('Preview error:', error)
+      details.error = error instanceof Error ? error.message : 'Unknown error'
+      setPaymentDetails(details)
+      setShowDetailsModal(true)
+      setLoading(null)
+    }
+  }
+
+  const confirmAndSend = async () => {
+    if (!paymentDetails) return
+
+    setShowConfirmModal(false)
+    setLoading(paymentDetails.tierName)
+
+    const requestUrl = '/api/payment/create-checkout'
+    const requestHeaders = {
+      'Content-Type': 'application/json',
+    }
+    const requestBody = {
+      product_id: paymentDetails.productId,
+      preview_only: false
+    }
+
+    try {
+      const response = await fetch(requestUrl, {
+        method: 'POST',
+        headers: requestHeaders,
+        body: JSON.stringify(requestBody),
+      })
+
+      const data = await response.json()
+      paymentDetails.response = data
+
       if (response.status === 401) {
-        alert('Please sign in to continue. Use the GitHub or Google login buttons in the top right corner.')
+        paymentDetails.error = 'Authentication required'
+        setPaymentDetails({...paymentDetails})
+        setShowDetailsModal(true)
         setLoading(null)
         return
       }
 
-      const data = await response.json()
-
       if (data.error) {
-        alert(`Error: ${data.error}`)
+        paymentDetails.error = data.error
+        paymentDetails.backendRequest = data.backendRequest  // Include backend request details in error response
+        setPaymentDetails({...paymentDetails})
+        setShowDetailsModal(true)
       } else if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl
+        paymentDetails.response = { ...data, status: response.status }
+        setPaymentDetails({...paymentDetails})
+        setShowDetailsModal(true)
+        setTimeout(() => {
+          window.location.href = data.checkoutUrl
+        }, 3000)
       } else {
-        alert('Failed to create checkout session')
+        paymentDetails.error = 'Failed to create checkout session'
+        setPaymentDetails({...paymentDetails})
+        setShowDetailsModal(true)
       }
     } catch (error) {
       console.error('Checkout error:', error)
-      alert('Failed to start checkout process. Please try again.')
+      paymentDetails.error = error instanceof Error ? error.message : 'Unknown error'
+      setPaymentDetails({...paymentDetails})
+      setShowDetailsModal(true)
     } finally {
       setLoading(null)
     }
   }
 
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <>
+      {/* Confirmation Modal */}
+      {showConfirmModal && paymentDetails?.backendRequest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">🔍 确认支付请求</h2>
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false)
+                    setLoading(null)
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Product Info */}
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-2">订阅信息</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-600">套餐:</span>
+                    <span className="ml-2 font-medium">{paymentDetails.tierName}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">价格:</span>
+                    <span className="ml-2 font-medium">${paymentDetails.price}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">周期:</span>
+                    <span className="ml-2 font-medium capitalize">{paymentDetails.cycle}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Product ID:</span>
+                    <span className="ml-2 font-mono text-xs">{paymentDetails.productId}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Backend Request Details */}
+              <div className="mb-6 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-3">🚀 后端将发送到 Creem API 的请求详情</h3>
+
+                <div className="mb-3">
+                  <span className="text-gray-600 font-medium text-sm">URL:</span>
+                  <code className="block mt-1 bg-white px-3 py-2 rounded text-xs border">
+                    {paymentDetails.backendRequest.url}
+                  </code>
+                </div>
+
+                <div className="mb-3">
+                  <span className="text-gray-600 font-medium text-sm">Method:</span>
+                  <code className="block mt-1 bg-white px-3 py-2 rounded text-xs border">
+                    {paymentDetails.backendRequest.method}
+                  </code>
+                </div>
+
+                <div className="mb-3">
+                  <span className="text-gray-600 font-medium text-sm">Headers (包含 x-api-key):</span>
+                  <pre className="mt-1 bg-white p-3 rounded text-xs overflow-x-auto border-2 border-green-400">
+                    {JSON.stringify(paymentDetails.backendRequest.headers, null, 2)}
+                  </pre>
+                </div>
+
+                <div>
+                  <span className="text-gray-600 font-medium text-sm">Request Body:</span>
+                  <pre className="mt-1 bg-white p-3 rounded text-xs overflow-x-auto border">
+                    {JSON.stringify(paymentDetails.backendRequest.body, null, 2)}
+                  </pre>
+                </div>
+              </div>
+
+              {/* Confirm Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmAndSend}
+                  className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition"
+                >
+                  ✓ 确认并发送请求
+                </button>
+                <button
+                  onClick={() => {
+                    setShowConfirmModal(false)
+                    setLoading(null)
+                  }}
+                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-400 transition"
+                >
+                  ✗ 取消
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Details Modal */}
+      {showDetailsModal && paymentDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">Payment Details</h2>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Product Info */}
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-2">Product Information</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-gray-600">Plan:</span>
+                    <span className="ml-2 font-medium">{paymentDetails.tierName}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Price:</span>
+                    <span className="ml-2 font-medium">${paymentDetails.price}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Billing:</span>
+                    <span className="ml-2 font-medium capitalize">{paymentDetails.cycle}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Product ID:</span>
+                    <span className="ml-2 font-mono text-xs">{paymentDetails.productId}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Request Details */}
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 mb-2">Request Details</h3>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="mb-3">
+                    <span className="text-gray-600 text-sm">URL:</span>
+                    <code className="ml-2 text-xs bg-white px-2 py-1 rounded">{paymentDetails.requestUrl}</code>
+                  </div>
+                  <div className="mb-3">
+                    <span className="text-gray-600 text-sm">Headers:</span>
+                    <pre className="mt-1 bg-white p-2 rounded text-xs overflow-x-auto">
+                      {JSON.stringify(paymentDetails.headers, null, 2)}
+                    </pre>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 text-sm">Body:</span>
+                    <pre className="mt-1 bg-white p-2 rounded text-xs overflow-x-auto">
+                      {JSON.stringify(paymentDetails.body, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Backend Request (if available) */}
+              {paymentDetails.backendRequest && (
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-900 mb-2">Backend → Creem API Request</h3>
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-300">
+                    <pre className="text-xs overflow-x-auto">
+                      {JSON.stringify(paymentDetails.backendRequest, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
+
+              {/* Response Details */}
+              {paymentDetails.response && (
+                <div className="mb-6">
+                  <h3 className="font-semibold text-gray-900 mb-2">Response</h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <pre className="text-xs overflow-x-auto bg-white p-2 rounded">
+                      {JSON.stringify(paymentDetails.response, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
+
+              {/* Error Display */}
+              {paymentDetails.error && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <h3 className="font-semibold text-red-900 mb-2">Error</h3>
+                  <p className="text-red-700 text-sm">{paymentDetails.error}</p>
+                </div>
+              )}
+
+              {/* Success Message */}
+              {!paymentDetails.error && paymentDetails.response?.checkoutUrl && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-700 font-medium">
+                    Redirecting to checkout in 3 seconds...
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <section className="py-20 bg-gradient-to-b from-white to-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -320,5 +621,6 @@ export default function Pricing() {
         </div>
       </div>
     </section>
+    </>
   )
 }

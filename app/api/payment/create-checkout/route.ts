@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import axios from 'axios'
 
 export async function POST(request: Request) {
   try {
@@ -15,14 +16,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { priceId, billingCycle } = body
+    const { product_id, preview_only } = body
 
-    console.log('📦 Received priceId:', priceId)
-    console.log('💳 Billing cycle:', billingCycle)
+    console.log('📦 Received product_id:', product_id)
+    console.log('📧 User email:', user.email)
+    console.log('👀 Preview only:', preview_only)
 
-    if (!priceId) {
+    if (!product_id) {
       return NextResponse.json(
-        { error: 'Price ID is required' },
+        { error: 'Product ID is required' },
         { status: 400 }
       )
     }
@@ -37,55 +39,119 @@ export async function POST(request: Request) {
       )
     }
 
-    const origin = request.headers.get('origin') || 'http://localhost:3000'
-
-    // Create checkout session with Creem API
-    // Try simpler request body format
-    const requestBody = {
-      product_id: priceId,
-      success_url: `${origin}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-      customer: {
-        email: user.email,
-      },
+    // If preview_only mode, return request details without sending
+    if (preview_only) {
+      return NextResponse.json({
+        preview: true,
+        backendRequest: {
+          url: 'https://api.creem.io/v1/checkouts',
+          method: 'POST',
+          headers: {
+            'x-api-key': creemApiKey, // Full API key for debugging
+          },
+          body: { product_id },
+        }
+      })
     }
 
-    console.log('🔍 Request body:', JSON.stringify(requestBody, null, 2))
+    // Log detailed request information
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🔍 CREEM API REQUEST DETAILS')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('📍 URL: https://api.creem.io/v1/checkouts')
+    console.log('📋 Method: POST')
+    console.log('\n🔐 Headers:')
+    console.log(JSON.stringify({
+      'x-api-key': `${creemApiKey.substring(0, 15)}...${creemApiKey.substring(creemApiKey.length - 4)}`,
+    }, null, 2))
+    console.log('\n📦 Request Body:')
+    console.log(JSON.stringify({ product_id }, null, 2))
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
 
-    const creemResponse = await fetch('https://api.creem.io/v1/checkouts', {
-      method: 'POST',
-      headers: {
-        'x-api-key': creemApiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    })
-
-    if (!creemResponse.ok) {
-      const errorData = await creemResponse.json()
-      console.error('Creem API error:', errorData)
-
-      let errorMessage = 'Failed to create checkout session'
-
-      if (creemResponse.status === 403) {
-        errorMessage = 'Product not found. Please create products in Creem Dashboard first.'
-      } else if (creemResponse.status === 401) {
-        errorMessage = 'Invalid API key. Please check your Creem API key.'
-      }
-
-      return NextResponse.json(
-        { error: errorMessage, details: errorData },
-        { status: creemResponse.status }
+    try {
+      const subscriptionCheckout = await axios.post(
+        'https://api.creem.io/v1/checkouts',
+        {
+          product_id: product_id,
+        },
+        {
+          headers: { 'x-api-key': creemApiKey },
+        }
       )
+
+      // Log response
+      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('📥 CREEM API RESPONSE')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('📊 Status Code:', subscriptionCheckout.status)
+      console.log('\n✅ Success Response Body:')
+      console.log(JSON.stringify(subscriptionCheckout.data, null, 2))
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
+
+      const checkoutSession = subscriptionCheckout.data
+
+      // Redirect to checkout URL
+      return NextResponse.json({
+        checkoutUrl: checkoutSession.checkout_url,
+        sessionId: checkoutSession.id,
+        // Backend request details for debugging
+        backendRequest: {
+          url: 'https://api.creem.io/v1/checkouts',
+          method: 'POST',
+          headers: {
+            'x-api-key': creemApiKey, // Full API key for debugging
+          },
+          body: { product_id },
+        },
+        backendResponse: {
+          status: subscriptionCheckout.status,
+          data: checkoutSession,
+        }
+      })
+    } catch (axiosError: any) {
+      // Handle axios errors
+      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.log('📥 CREEM API RESPONSE')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+
+      if (axiosError.response) {
+        console.log('📊 Status Code:', axiosError.response.status)
+        console.log('📊 Status Text:', axiosError.response.statusText)
+        console.error('\n❌ Error Response Body:')
+        console.error(JSON.stringify(axiosError.response.data, null, 2))
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
+
+        let errorMessage = 'Failed to create checkout session'
+
+        if (axiosError.response.status === 403) {
+          errorMessage = 'Product not found. Please create products in Creem Dashboard first.'
+        } else if (axiosError.response.status === 401) {
+          errorMessage = 'Invalid API key. Please check your Creem API key.'
+        }
+
+        return NextResponse.json(
+          {
+            error: errorMessage,
+            details: axiosError.response.data,
+            debug: {
+              requestUrl: 'https://api.creem.io/v1/checkouts',
+              requestHeaders: {
+                'x-api-key': `${creemApiKey.substring(0, 15)}...${creemApiKey.substring(creemApiKey.length - 4)}`,
+              },
+              requestBody: { product_id },
+              responseStatus: axiosError.response.status
+            }
+          },
+          { status: axiosError.response.status }
+        )
+      } else {
+        console.error('❌ Network Error:', axiosError.message)
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
+        throw axiosError
+      }
     }
-
-    const checkoutSession = await creemResponse.json()
-
-    return NextResponse.json({
-      checkoutUrl: checkoutSession.url,
-      sessionId: checkoutSession.id,
-    })
   } catch (error) {
-    console.error('Checkout error:', error)
+    console.error('❌ Checkout error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
